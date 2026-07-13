@@ -1,0 +1,16 @@
+{
+  "name": "Smart Study Planner",
+  "short_name": "StudyPlanner",
+  "description": "Academic productivity assistant untuk mahasiswa.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f7f8fb",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
