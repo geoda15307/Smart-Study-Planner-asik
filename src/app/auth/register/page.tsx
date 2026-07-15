@@ -12,7 +12,7 @@ import { useAppStore } from "@/store/useAppStore";
 export default function RegisterPage() {
   const router = useRouter();
   const authenticate = useAppStore((state) => state.authenticate);
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "", university: "", major: "", semester: 1 });
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -47,9 +47,6 @@ export default function RegisterPage() {
           <Field label="Email"><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
           <Field label="Password"><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>
           <Field label="Konfirmasi password"><Input type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} /></Field>
-          <Field label="Universitas"><Input value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })} /></Field>
-          <Field label="Jurusan"><Input value={form.major} onChange={(e) => setForm({ ...form, major: e.target.value })} /></Field>
-          <Field label="Semester"><Input type="number" min={1} value={form.semester} onChange={(e) => setForm({ ...form, semester: Number(e.target.value) })} /></Field>
         </div>
         <Button className="mt-6 w-full" disabled={loading} onClick={submit}>{loading ? "Membuat akun..." : "Daftar"}</Button>
         <p className="mt-6 text-center text-sm text-slate-500">Sudah punya akun? <Link href="/auth/login" className="font-bold text-primary-600">Login</Link></p>
