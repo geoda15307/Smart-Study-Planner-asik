@@ -11,7 +11,7 @@ import { useAppStore } from "@/store/useAppStore";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const authenticate = useAppStore((state) => state.authenticate);
+  const logoutUser = useAppStore((state) => state.logoutUser);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,9 +21,9 @@ export default function RegisterPage() {
     if (form.password !== form.confirmPassword) return setError("Konfirmasi password harus sama.");
     setLoading(true);
     try {
-      const result = await register(form);
-      authenticate(result.user, result.token);
-      router.replace("/onboarding");
+      await register(form);
+      logoutUser();
+      router.replace("/auth/login");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrasi gagal.");
     } finally {
@@ -37,7 +37,7 @@ export default function RegisterPage() {
         <div className="flex items-center gap-3">
           <div>
             <h1 className="text-2xl font-black text-slate-900">Buat Akun Mahasiswa</h1>
-            <p className="mt-1 text-sm text-slate-500">Lengkapi data awal agar rekomendasi belajar lebih sesuai.</p>
+            <p className="mt-1 text-sm text-slate-500">Buat akun untuk mulai menggunakan aplikasi.</p>
           </div>
         </div>
         {error ? <p className="mt-5 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p> : null}
