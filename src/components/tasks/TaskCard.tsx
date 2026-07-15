@@ -29,10 +29,6 @@ export function TaskCard({ task, onComplete, onDelete }: { task: Task; onComplet
           <StatusBadge status={task.status} />
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase leading-none text-slate-400">Score</p>
-            <p className="text-lg font-black leading-tight text-slate-900">{task.priorityScore}</p>
-          </div>
           <CategoryIcon category={category} className="h-9 w-9 text-lg" />
         </div>
       </div>

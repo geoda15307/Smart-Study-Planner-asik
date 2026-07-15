@@ -94,8 +94,6 @@ export default function TaskDetailPage() {
             </div>
 
             <div className={`flex shrink-0 flex-col items-center justify-center rounded-3xl px-8 py-5 ${riskStyle[risk]}`}>
-              <p className="text-[11px] font-black uppercase tracking-wide opacity-70">Priority Score</p>
-              <p className="text-4xl font-black">{currentTask.priorityScore}</p>
               <p className="text-[11px] font-black uppercase tracking-wide opacity-70">{riskLabel[risk]}</p>
             </div>
           </div>
