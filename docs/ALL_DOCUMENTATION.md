@@ -39,9 +39,12 @@ Rincian lengkap tiap dependency dan alasannya: [14_DEPENDENCIES](./14_DEPENDENCI
 - [Roadmap](./16_ROADMAP.md) — selesai / berjalan / belum / dibatalkan
 - [Technical Debt](./17_TECH_DEBT.md) — dead code, dependency tak terpakai, dll (tidak dihapus)
 - [Changelog](./18_CHANGELOG.md) — riwayat perubahan besar
+- [Developer Guide](./19_DEVELOPER_GUIDE.md) — setup, konvensi, cara menambah halaman/state
+- [Project Constitution](./20_PROJECT_CONSTITUTION.md) — prinsip inti yang tidak boleh dilanggar tanpa diskusi eksplisit
+- [Architectural Decisions](./21_ARCHITECTURAL_DECISIONS.md) — catatan ADR: kenapa tiap keputusan besar diambil
 
 ## Cara memakai dokumentasi ini
 
-Setiap file berdiri sendiri untuk satu topik, tapi saling bertaut lewat link relatif — mulai dari mana saja sesuai kebutuhan, ikuti link untuk konteks lebih dalam. Kalau baru pertama kali di project ini, urutan yang disarankan: **Project Overview → Architecture → Authentication → State Management**, baru lanjut ke topik spesifik yang relevan dengan pekerjaan yang akan dilakukan.
+Setiap file berdiri sendiri untuk satu topik, tapi saling bertaut lewat link relatif — mulai dari mana saja sesuai kebutuhan, ikuti link untuk konteks lebih dalam. Kalau baru pertama kali di project ini, urutan yang disarankan: **Project Overview → Architecture → Project Constitution → Developer Guide**, baru lanjut ke topik spesifik yang relevan dengan pekerjaan yang akan dilakukan. Untuk memahami alasan di balik keputusan arsitektur tertentu (bukan cuma apa keputusannya), lihat Architectural Decisions.
 
 Dokumentasi naratif sesi-per-sesi yang lebih detail (termasuk potongan before/after kode) ada di `Dokumentasi_yuyud27.MD` di root project — dokumen ini menggantikannya sebagai referensi terstruktur utama, bukan menghapusnya.
