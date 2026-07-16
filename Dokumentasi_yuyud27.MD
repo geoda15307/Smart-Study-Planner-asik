@@ -84,6 +84,62 @@ Saat troubleshooting poin 3 di atas, sebelum toggle "Confirm email" dipastikan b
 
 Atas permintaan Anda, sejak sesi ini setiap file yang akan diedit lebih dulu di-*backup* dengan nama `<namafile>.backup` sebelum perubahan dilakukan. File `*.backup` ditambahkan ke `.gitignore` supaya tidak ikut ter-commit dan mengotori riwayat Git.
 
+### U.7 Perubahan Roadmap: Supabase Hanya untuk Auth, Sisanya Lokal
+
+Keputusan di [U.1](#u1-desain--penerapan-skema-database-supabase) untuk memindahkan seluruh data aplikasi ke Supabase **dibatalkan**. Keputusan final:
+
+- **Pakai Supabase:** Authentication (register/login/logout/session) dan `profiles` (data akun dasar).
+- **Tetap lokal** (Zustand + localStorage, IndexedDB untuk data besar seperti file): Tasks, Categories, Courses, Schedule, Widgets, Preferences, Achievement, AI Chat History, dan sekarang juga Upload/OCR/AI Summary.
+
+Alasan: menghindari limit Supabase Free, aplikasi tetap ringan, tidak bergantung internet, bisa dipakai offline.
+
+**Temuan saat analisis ulang:** migrasi Zustand→Supabase untuk data tersebut ternyata **belum pernah benar-benar dikerjakan** (baru sebatas rencana) — jadi pembatalan ini **tidak butuh perubahan kode sama sekali** di frontend. `useAppStore.ts` memang sudah 100% lokal untuk semua hal di luar auth sejak awal.
+
+**Belum dieksekusi, butuh konfirmasi terpisah:** 10 tabel non-auth yang sudah dibuat di Supabase (`tasks`, `categories`, `courses`, `subtasks`, `class_schedules`, `study_sessions`, `preferences`, `widget_preferences`, `achievements`, `chat_messages`) sekarang kosong dan tidak dipakai — kandidat untuk di-*drop* supaya tidak membingungkan di kemudian hari, tapi ini operasi database yang merusak (destructive) sehingga sengaja **tidak** dieksekusi tanpa persetujuan eksplisit Anda.
+
+### U.8 Sistem Upload File Lokal (Modular)
+
+Fitur baru: upload file lokal (IndexedDB untuk blob, Zustand/localStorage untuk metadata) — bukan Supabase Storage. Mendukung Gambar (PNG/JPG/JPEG), Dokumen (PDF), Spreadsheet (XLSX/XLS/CSV). Dikerjakan bertahap, masing-masing commit kecil:
+
+| File | Peran |
+|---|---|
+| `src/lib/indexedDb.ts` | Wrapper `idb` generik untuk simpan/ambil/hapus blob file |
+| `src/lib/upload/config.ts` | Konfigurasi terpusat: ukuran maks (10MB, mudah diubah), tipe file yang diizinkan per kategori, validasi |
+| `src/services/storage/storageService.ts` | Diperluas dengan `saveFileToStorage`/`getFileFromStorage`/`deleteFileFromStorage` di atas `indexedDb.ts` |
+| `src/store/useAppStore.ts` | State `uploadedFiles` (metadata saja, bukan blob) + action `addUploadedFile`/`updateUploadedFile`/`removeUploadedFile` |
+| `src/hooks/useFileUpload.ts` | Drag&drop, click-to-upload, progress nyata (via `FileReader.onprogress`, bukan animasi palsu), validasi per file |
+| `src/components/upload/*` | `UploadDropzone`, `UploadFileList`, `UploadFileItem` (preview gambar via blob dari IndexedDB) |
+| `src/app/upload/page.tsx` | Halaman baru, ditambahkan ke nav sebagai "Dokumen" |
+
+**Diverifikasi langsung di browser** (bukan cuma tsc/lint): drop file sungguhan (event asli, bukan simulasi UI), multi-file sekaligus, file tipe salah ditolak dengan pesan jelas, preview gambar ter-render dari IndexedDB, data bertahan setelah refresh penuh (metadata *dan* blob), dan hapus file benar-benar membersihkan blob di IndexedDB (dicek langsung lewat query IndexedDB, bukan cuma tampilan hilang dari list).
+
+Arsitektur modular disiapkan untuk OCR/AI Summary — lihat U.9.
+
+### U.9 Scaffolding OCR & AI Provider (Interface Saja, Belum Diimplementasikan)
+
+Sesuai arahan roadmap ("desain sekarang, jangan diimplementasikan dulu"):
+
+- `src/services/ocr/types.ts` — interface `OCRProvider` (`extractText`), tanpa implementasi provider apapun.
+- `src/lib/ai/types.ts` — interface `AIProvider` dirancang **sama persis** dengan kontrak `/api/ai/analyze` dan `/api/ai/chat` yang sudah ada, plus `summarizeDocument` untuk alur OCR→Summary di masa depan. Sengaja diletakkan di `src/lib/` (bukan `src/services/`) karena provider call harus selalu server-side (lihat gotcha `.env.example`: "Jangan expose API key di frontend").
+- `src/lib/ai/getAIProvider.ts` — factory yang membaca env var `AI_PROVIDER` (sudah ada di `.env.example` sejak awal tapi tidak pernah dipakai kode manapun) dan memilih implementasi. Provider `openai`/`anthropic`/`gemini`/`openrouter` berupa stub yang melempar error jelas ("belum dikonfigurasi") — bukan diam-diam gagal.
+- **Route `/api/ai/analyze` dan `/api/ai/chat` yang hidup TIDAK disentuh** — tetap rule-based seperti sebelumnya. Dikonfirmasi langsung di browser: AI Assistant merespons persis sama seperti sebelum perubahan ini.
+
+### U.10 Rekomendasi Provider AI (Riset, Belum Diimplementasikan)
+
+Riset langsung dari web (harga & limit Juli 2026, bukan dari data training) untuk kebutuhan OCR + AI Summary:
+
+| Provider | Free tier | Vision/OCR | PDF | Catatan |
+|---|---|---|---|---|
+| **Google Gemini** (Gemini 3 Flash) | **1.500 req/hari, 250K TPM — semua modalitas gratis** | Native, sangat baik | Upload langsung, context 1M, tanpa OCR terpisah | **Rekomendasi utama** — satu panggilan API untuk OCR + summary sekaligus |
+| Mistral (OCR 3) | ~1B token/bulan (tier evaluasi) | Terbaik di kelasnya, tapi **produk khusus OCR** | Spesialisasinya | Perlu dipasangkan dengan provider lain untuk summary |
+| OpenRouter | Beberapa model vision gratis (Gemma 4, Nemotron), tapi dibatasi 20 RPM / 200 req/hari | Baik lewat model gratis | Lewat model vision | Cocok untuk arsitektur yang bisa ganti-ganti provider |
+| Groq | Gratis selamanya, 14.400 req/hari, tanpa kartu kredit | Model vision masih preview/terbatas | Belum jelas | Inference tercepat, tapi belum andal untuk OCR |
+| Cloudflare Workers AI | 10.000 req/hari gratis selamanya | Ada, harga belum jelas | Belum jelas | Runtime edge kurang pas untuk pola API route Next.js |
+| OpenAI | **Tidak ada free tier berarti** (perlu spend $5+ untuk buka Tier 1) | Baik | Baik | Tetap didukung di abstraction, bukan default |
+| Anthropic | **Tidak ada free tier API** (cuma kredit ~$5 sekali saat daftar) | Baik | Baik | Sama, didukung tapi bukan default |
+
+**Rekomendasi:** jadikan `gemini` sebagai `AI_PROVIDER` default begitu provider sungguhan diaktifkan — satu-satunya provider yang punya free tier besar DAN vision/OCR/PDF native sekaligus, jadi OCR dan AI Summary bisa jadi satu alur tanpa dua provider terpisah. OpenAI/Anthropic/OpenRouter tetap jadi opsi setara di abstraction untuk fleksibilitas.
+
 ---
 
 ## 1. Audit Awal Proyek
