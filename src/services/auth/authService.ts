@@ -25,23 +25,13 @@ export async function login(email: string, password: string) {
     id: data.user.id,
     name: profile?.name || data.user.email!.split("@")[0],
     email: data.user.email!,
-    university: profile?.university ?? "",
-    major: profile?.major ?? "",
-    semester: profile?.semester ?? 1,
     isPremium: profile?.is_premium ?? false
   };
 
   return { token: data.session.access_token, user };
 }
 
-export async function register(input: {
-  name: string;
-  email: string;
-  password: string;
-  university: string;
-  major: string;
-  semester: number;
-}) {
+export async function register(input: { name: string; email: string; password: string }) {
   if (!input.name.trim()) throw new Error("Nama tidak boleh kosong.");
   if (!input.email.includes("@")) throw new Error("Email wajib valid.");
   if (input.password.length < 8) throw new Error("Password minimal 8 karakter.");
@@ -50,14 +40,7 @@ export async function register(input: {
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
-    options: {
-      data: {
-        name: input.name,
-        university: input.university || null,
-        major: input.major || null,
-        semester: input.semester
-      }
-    }
+    options: { data: { name: input.name } }
   });
   if (error) throw new Error(translateAuthError(error.message));
 
@@ -65,9 +48,6 @@ export async function register(input: {
     id: data.user!.id,
     name: input.name,
     email: input.email,
-    university: input.university || "Belum diisi",
-    major: input.major || "Belum diisi",
-    semester: input.semester,
     isPremium: false
   };
 
