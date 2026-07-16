@@ -1,6 +1,6 @@
 export type Priority = "Low" | "Medium" | "High" | "Urgent";
 export type Difficulty = "Easy" | "Medium" | "Hard";
-export type TaskStatus = "Belum Mulai" | "Sedang Dikerjakan" | "Menunggu Review" | "Selesai" | "Terlambat";
+export type TaskStatus = "Belum Mulai" | "Selesai" | "Terlambat";
 export type ProductiveTime = "Pagi" | "Siang" | "Sore" | "Malam";
 
 export interface User {
@@ -22,6 +22,7 @@ export interface Category {
   name: string;
   color: string;
   icon: string;
+  activities: string[];
 }
 
 export interface Subtask {
@@ -126,7 +127,7 @@ export interface ChatMessage {
 export interface TaskInput {
   title: string;
   description: string;
-  courseId: string;
+  activity: string;
   categoryId: string;
   deadlineDate: string;
   deadlineTime: string;
