@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Achievement, Category, ChatMessage, ClassSchedule, Course, Preference, StudySession, Task, User, WidgetPreference } from "@/types";
+import type { Achievement, Category, ChatMessage, ClassSchedule, Course, Preference, StudySession, Task, UploadedFileMeta, User, WidgetPreference } from "@/types";
 import { achievements, categories, courses, demoUser, preference, schedules, tasks, widgets } from "@/lib/data";
 import { calculatePriorityScore } from "@/utils/priorityScore";
 import { nowISO } from "@/utils/date";
@@ -20,6 +20,7 @@ type AppState = {
   widgets: WidgetPreference[];
   achievements: Achievement[];
   chatMessages: ChatMessage[];
+  uploadedFiles: UploadedFileMeta[];
   authenticate: (user: User, token: string) => void;
   setUser: (user: User) => void;
   logoutUser: () => void;
@@ -35,6 +36,9 @@ type AppState = {
   updateWidget: (widgetId: string, updates: Partial<WidgetPreference>) => void;
   addChatMessage: (message: ChatMessage) => void;
   clearChatMessages: () => void;
+  addUploadedFile: (file: UploadedFileMeta) => void;
+  updateUploadedFile: (id: string, updates: Partial<UploadedFileMeta>) => void;
+  removeUploadedFile: (id: string) => void;
   resetDemoData: () => void;
 };
 
@@ -61,6 +65,7 @@ export const useAppStore = create<AppState>()(
       widgets,
       achievements,
       chatMessages: [],
+      uploadedFiles: [],
       authenticate: (user, token) => set({ user, token, isAuthenticated: true }),
       setUser: (user) => set({ user }),
       logoutUser: () => set({ isAuthenticated: false, token: null, user: demoUser, studySessions: [], chatMessages: [] }),
@@ -91,6 +96,11 @@ export const useAppStore = create<AppState>()(
       })),
       addChatMessage: (message) => set((state) => ({ chatMessages: [...state.chatMessages, message] })),
       clearChatMessages: () => set({ chatMessages: [] }),
+      addUploadedFile: (file) => set((state) => ({ uploadedFiles: [file, ...state.uploadedFiles] })),
+      updateUploadedFile: (id, updates) => set((state) => ({
+        uploadedFiles: state.uploadedFiles.map((file) => file.id === id ? { ...file, ...updates } : file)
+      })),
+      removeUploadedFile: (id) => set((state) => ({ uploadedFiles: state.uploadedFiles.filter((file) => file.id !== id) })),
       resetDemoData: () => set((state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
@@ -103,7 +113,8 @@ export const useAppStore = create<AppState>()(
         preference,
         widgets,
         achievements,
-        chatMessages: []
+        chatMessages: [],
+        uploadedFiles: []
       }))
     }),
     { name: "smart-study-planner-store" }
