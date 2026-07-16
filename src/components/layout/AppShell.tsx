@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useTheme } from "@/hooks/useTheme";
+import { createClient } from "@/lib/supabase/client";
 
 const appRoutes = [
   ["Dashboard", "/dashboard", "🏠"],
@@ -38,6 +39,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
   const router = useRouter();
   const user = useAppStore((state) => state.user);
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  const logoutUser = useAppStore((state) => state.logoutUser);
   const [menuOpen, setMenuOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const showBackButton = pathname !== "/dashboard";
@@ -49,6 +51,17 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
     const unsub = useAppStore.persist.onFinishHydration(() => setHydrated(true));
     return () => unsub();
   }, []);
+
+  // Safety net: if the Supabase session expires or is revoked elsewhere
+  // (another tab, token refresh failure), keep the store's auth flag in sync
+  // instead of leaving the UI showing a session that no longer works.
+  useEffect(() => {
+    const supabase = createClient();
+    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") logoutUser();
+    });
+    return () => subscription.subscription.unsubscribe();
+  }, [logoutUser]);
 
   useEffect(() => {
     if (hydrated && !isAuthenticated) {

@@ -53,10 +53,10 @@ export default function LoginPage() {
         </div>
         {error ? <p className="mt-5 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p> : null}
         <div className="mt-6 space-y-4">
-          <Field label="Email"><Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="demo@student.com" /></Field>
+          <Field label="Email"><Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="demo@smartstudy.app" /></Field>
           <Field label="Password"><Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="password123" /></Field>
           <Button className="w-full" disabled={loading} onClick={() => submit()}>{loading ? "Memvalidasi akun..." : "Login"}</Button>
-          <Button className="w-full" variant="secondary" disabled={loading} onClick={() => submit("demo@student.com", "password123")}>Masuk sebagai Demo</Button>
+          <Button className="w-full" variant="secondary" disabled={loading} onClick={() => submit("demo@smartstudy.app", "password123")}>Masuk sebagai Demo</Button>
           <Button className="w-full" variant="secondary" disabled={loading}>Login dengan Google</Button>
         </div>
         <p className="mt-6 text-center text-sm text-slate-500">Belum punya akun? <Link href="/auth/register" className="font-bold text-primary-600">Daftar sekarang</Link></p>

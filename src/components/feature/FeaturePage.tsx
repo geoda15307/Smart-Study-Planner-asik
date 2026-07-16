@@ -213,8 +213,8 @@ export function AccountPage() {
   const user = useAppStore((state) => state.user);
   const logoutUser = useAppStore((state) => state.logoutUser);
 
-  function handleLogout() {
-    clearAuthToken();
+  async function handleLogout() {
+    await clearAuthToken();
     logoutUser();
     router.replace("/auth/login");
   }

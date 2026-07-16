@@ -1,21 +1,37 @@
 import type { User } from "@/types";
-import { demoUser } from "@/lib/data";
+import { createClient } from "@/lib/supabase/client";
 
-const TOKEN_KEY = "smart-study-planner-token";
-
-function saveToken(token: string) {
-  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token);
+function translateAuthError(message: string) {
+  const map: Record<string, string> = {
+    "Invalid login credentials": "Email atau password salah.",
+    "User already registered": "Email sudah terdaftar. Silakan login.",
+    "Email not confirmed": "Email belum dikonfirmasi. Cek inbox kamu untuk link konfirmasi.",
+    "Password should be at least 6 characters": "Password minimal 6 karakter."
+  };
+  return map[message] ?? message;
 }
 
 export async function login(email: string, password: string) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
   if (!email || !password) throw new Error("Email dan password wajib diisi.");
   if (!email.includes("@")) throw new Error("Format email tidak valid.");
-  if (password.length < 8) throw new Error("Password minimal 8 karakter.");
 
-  const token = `mock-jwt-${Date.now()}`;
-  saveToken(token);
-  return { token, user: { ...demoUser, email } };
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(translateAuthError(error.message));
+
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+
+  const user: User = {
+    id: data.user.id,
+    name: profile?.name || data.user.email!.split("@")[0],
+    email: data.user.email!,
+    university: profile?.university ?? "",
+    major: profile?.major ?? "",
+    semester: profile?.semester ?? 1,
+    isPremium: profile?.is_premium ?? false
+  };
+
+  return { token: data.session.access_token, user };
 }
 
 export async function register(input: {
@@ -26,13 +42,27 @@ export async function register(input: {
   major: string;
   semester: number;
 }) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
   if (!input.name.trim()) throw new Error("Nama tidak boleh kosong.");
   if (!input.email.includes("@")) throw new Error("Email wajib valid.");
   if (input.password.length < 8) throw new Error("Password minimal 8 karakter.");
 
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email,
+    password: input.password,
+    options: {
+      data: {
+        name: input.name,
+        university: input.university || null,
+        major: input.major || null,
+        semester: input.semester
+      }
+    }
+  });
+  if (error) throw new Error(translateAuthError(error.message));
+
   const user: User = {
-    id: `user_${Date.now()}`,
+    id: data.user!.id,
     name: input.name,
     email: input.email,
     university: input.university || "Belum diisi",
@@ -41,11 +71,12 @@ export async function register(input: {
     isPremium: false
   };
 
-  const token = `mock-jwt-${Date.now()}`;
-  saveToken(token);
-  return { token, user };
+  // data.session is null when the project requires email confirmation —
+  // the account exists but can't log in yet until the link is clicked.
+  return { token: data.session?.access_token ?? null, user, needsEmailConfirmation: !data.session };
 }
 
-export function logout() {
-  if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
+export async function logout() {
+  const supabase = createClient();
+  await supabase.auth.signOut();
 }

@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "", university: "", major: "", semester: 1 });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   async function submit() {
     setError("");
@@ -22,6 +23,10 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const result = await register(form);
+      if (result.needsEmailConfirmation || !result.token) {
+        setConfirmationSent(true);
+        return;
+      }
       authenticate(result.user, result.token);
       router.replace("/onboarding");
     } catch (err) {
@@ -29,6 +34,19 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (confirmationSent) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-soft px-4 py-8">
+        <Card className="w-full max-w-md text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-2xl font-black text-white">S</div>
+          <h1 className="mt-5 text-2xl font-black text-slate-900">Cek email kamu</h1>
+          <p className="mt-2 text-sm text-slate-500">Kami sudah mengirim link konfirmasi ke <b>{form.email}</b>. Klik link itu untuk mengaktifkan akun, lalu login.</p>
+          <Link href="/auth/login"><Button className="mt-6 w-full">Ke halaman Login</Button></Link>
+        </Card>
+      </main>
+    );
   }
 
   return (
