@@ -402,3 +402,71 @@ Ditambah verifikasi visual langsung di browser (bukan cuma baca kode) untuk: tam
 2. **Upload Dokumen** (Supabase Storage) — logis dikerjakan setelah task punya baris nyata di database untuk dikaitkan dengan file yang di-upload.
 3. Setelah provider AI diputuskan final → **OCR**, **AI Summary**, dan upgrade **AI Assistant** & **Calendar Assistant** ke LLM sungguhan bisa dikerjakan sekaligus (satu keputusan provider membuka ketiganya).
 4. **Evaluasi Widget** — laporan rekomendasi keep/simplify/remove, bisa diselipkan kapan saja karena tidak bergantung pekerjaan lain.
+
+---
+
+# Update 17 Juli 2026 — Redesign UI (AI Assistant & Dokumen) + Integrasi AI
+
+**Branch:** `update-ui-ai-assistant-document-ai-integration`
+
+> **Catatan konteks:** rencana lama di atas ("AI Diblokir", "Upload belum dikerjakan") sudah **usang total**. Sejak update ini: pipeline dokumen (OCR + parser lokal, Sprint 1–3) dan seluruh fitur AI (Summary/Flashcard/Quiz/Recommendation + AI Assistant, Milestone A–E) **sudah selesai dan live** memakai Google Gemini lewat provider modular. Detail arsitektur & changelog teknisnya ada di `docs/AI_ARCHITECTURE_FREEZE.md` dan `docs/18_CHANGELOG.md`. Update kali ini fokus ke **lapisan UI/UX** di atas backend yang sudah jadi itu.
+
+## Ringkasan
+Redesign dua halaman utama agar terasa sebagai fitur bawaan Smart Study Planner (bukan tempelan ChatGPT/Gemini): **AI Assistant** dan **Dokumen**. Ditambah sistem **toast notification** global, aksi **download/rename** file, dan sejumlah polish UX. **Tidak ada perubahan flow bisnis** — service AI, hook upload, dan store tidak diubah logikanya, hanya presentasi.
+
+## UI
+
+### AI Assistant (`src/components/ai/ChatWindow.tsx` — ditulis ulang)
+- **Header disederhanakan** — nuansa chatbot dihilangkan; judul & deskripsi tinggal di AppShell. Bar tipis (tombol "Bersihkan") hanya muncul saat sudah ada percakapan.
+- **Empty state baru** — ikon akademik (GraduationCap, bukan robot), sapaan "Halo, {nama}. Mulai belajar dengan bantuan AI." + subtitle.
+- **Suggested prompt jadi kartu sederhana** (bukan tombol AI besar): Ringkas Materi, Buat Quiz, Jelaskan Konsep, Cari Referensi, Buat Jadwal Belajar — grid responsif (2 kolom mobile → 3 kolom ≥sm), ikon akademik.
+- **Bubble chat modern** — user (primary, `rounded-br-md`) vs asisten (slate, `rounded-bl-md`), spacing lebih lega, animasi muncul halus (`animate-fade-up`).
+- **Loading** — typing indicator 3 titik memantul (`typing-dot`).
+- **Auto-scroll** ke bawah tiap pesan/loading berubah (`scrollIntoView` smooth).
+- **Prompt input redesign total** — compact, multi-line auto-grow (maks 168px), tombol kirim modern (ikon `Send`), **Enter kirim / Shift+Enter baris baru**, hint shortcut di bawah input.
+
+### Dokumen (`src/components/upload/*` — redesign)
+- **Dropzone lebih jelas** (`UploadDropzone.tsx`) — ikon `UploadCloud`, state drag aktif (skala + warna), chip format (PNG/JPG/PDF/DOCX/XLSX/CSV/PPTX), keyboard-accessible (Enter/Space).
+- **Empty state** (`UploadFileList.tsx`) — ilustrasi folder + ajakan upload, plus label "N dokumen".
+- **Kartu file modern** (`UploadFileItem.tsx` — ditulis ulang) — metadata lengkap: ukuran, kategori, **jumlah halaman** (dari `DocumentRecord.content.pageCount`), tanggal upload; badge status pemrosesan; progress bar saat upload; hasil ekstraksi teks jadi `<details>` rapi (menggantikan "debug panel" Sprint 3); aksi **Download / Rename / Hapus** sebagai ikon.
+- Subtitle halaman diperbarui ("Upload materi kuliah — teksnya diekstrak otomatis, lalu ringkas & pelajari dengan AI"), judul jadi "Dokumen".
+
+### Komponen & layout
+- **Toast global** (baru): `src/store/useToast.ts` (store Zustand ringan non-persisted + helper imperatif `toast.*`) + `src/components/common/Toaster.tsx` (mount di `AppShell`, animasi slide-in, auto-dismiss 3.8 dtk, dismissible).
+- **Animasi CSS** ditambahkan di `globals.css`: `animate-fade-up`, `animate-slide-in`, `typing-dot`, `.skeleton` (shimmer), semua menghormati `prefers-reduced-motion`.
+- **Responsive** — semua komponen baru pakai kelas Tailwind theme-aware (`bg-surface`/`slate`/`primary`), jadi ikut 4 tema + dark mode; grid suggested-prompt & aksi file adaptif mobile↔desktop.
+
+## AI (koneksi)
+- **Terverifikasi terhubung backend nyata** (bukan hardcode): `ChatWindow` → `services/ai/aiService.askAI()` → `POST /api/ai/chat` → `getAIProvider().chat()`. Diuji langsung: klik suggested prompt → request terkirim → route membalas **401 "Kamu harus login untuk memakai fitur AI."** saat tanpa sesi (bukti koneksi asli; kalau hardcoded akan balas palsu).
+- **Request flow:** pesan user + konteks tugas + riwayat → service → route (auth `requireAIAuth`) → provider Gemini/mock.
+- **Response flow:** `{ reply }` → ditambahkan ke `chatMessages` (store) → render bubble.
+- **Loading:** typing indicator selama menunggu.
+- **Error handling + retry:** pesan error ramah (dari route) ditampilkan inline + tombol "Coba lagi" yang mengirim ulang prompt terakhir. Timeout/error provider ditangani di layer route (Milestone D) dan disurface sebagai pesan Bahasa Indonesia.
+
+## Upload Document
+- **Upload / progress / validasi:** tidak diubah logikanya (hook `useFileUpload` + `lib/upload/config`), kini diberi **toast** (sukses upload, tolak validasi, gagal simpan/baca/proses).
+- **Delete:** tetap membersihkan store + blob IndexedDB + `DocumentRecord`, kini + toast "File dihapus".
+- **Rename (baru):** edit nama inline di kartu file → `renameFile()` (hook) → `updateUploadedFile()` (store) → toast. Hanya mengubah `UploadedFileMeta.filename` (join by id, tidak menyentuh `DocumentRecord`).
+- **Download (baru):** `downloadStoredFile()` di `storageService` — ambil blob dari IndexedDB → trigger unduh.
+- **Preview:** gambar tetap di-preview via `URL.createObjectURL` (tidak berubah).
+
+## Refactor
+- **File ditulis ulang:** `ChatWindow.tsx`, `UploadFileItem.tsx`, `UploadFileList.tsx`, `UploadDropzone.tsx`.
+- **Komponen baru:** `common/Toaster.tsx`.
+- **Store baru:** `store/useToast.ts`.
+- **Utility/API baru:** `downloadStoredFile()` (`storageService.ts`), `renameFile()` (`useFileUpload.ts`).
+- **Komponen dihapus:** tidak ada (panel debug Sprint 3 di `UploadFileItem` dilebur jadi tampilan rapi, bukan file terpisah).
+- **File lain tersentuh:** `globals.css` (animasi), `AppShell.tsx` (mount Toaster), `ai-assistant/page.tsx` & `upload/page.tsx` (subtitle), `AIRecommendationView.tsx` (toast saat "Tambahkan ke Tugas/Kalender").
+
+## Bug Fix
+- **`console.error` di `useFileUpload` dihapus** — kegagalan pemrosesan dokumen kini disurface ke user via `toast.error` (sebelumnya hanya masuk console, tak terlihat user). Sisa `console.error` hanya 1 (di `useAppStore` migrasi hydration — infra, tak ada konteks toast saat itu; disengaja).
+- **Subtitle usang** ("diproses nanti") diperbaiki — pipeline sudah memproses otomatis.
+
+## Breaking Changes
+- **Kontrak komponen upload berubah (internal):** `UploadFileList` dan `UploadFileItem` sekarang menerima prop tambahan `onRename`. Karena keduanya hanya dipakai oleh `UploadDropzone` (yang ikut diperbarui), **tidak ada dampak ke modul lain**. Tidak ada perubahan pada API route, service, store shape, atau tipe domain.
+
+## Testing
+- `npx tsc --noEmit` → **0 error**. `npx next lint` → **0 warning/error**. `npm run build` (dev server dimatikan) → **sukses (exit 0)**.
+- **Verifikasi visual** (browser, render halaman ter-gate login via flag preview): AI Assistant empty state + kartu prompt + input + kirim pesan + error/retry; Dokumen dropzone + kartu file + metadata + aksi; **rename inline** (nama ter-update + toast hijau "Nama file diperbarui"); tidak ada error konsol.
+- **Koneksi AI** dikonfirmasi asli lewat respons 401 backend (bukan balasan hardcoded).
+- Fitur yang diverifikasi tetap normal: navigasi, styling/tema, upload flow (tidak diubah), store (shape tidak berubah).
