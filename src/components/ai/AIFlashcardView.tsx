@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { AIFlashcardSet, AISummary } from "@/types";
 import { aiRepository } from "@/services/ai/aiRepository";
 import { generateFlashcards } from "@/services/ai/flashcardService";
+import { matchesActiveSignature } from "@/lib/ai/cache";
 import { Button } from "@/components/common/Button";
 import { AIError, AILoading, AIStaleNote, errorMessage } from "./AIStates";
 
@@ -16,7 +17,7 @@ export function AIFlashcardView({ documentId, summary, filename }: { documentId:
   useEffect(() => {
     let active = true;
     aiRepository.getFlashcardSet(documentId).then((existing) => {
-      if (active) setSet(existing ?? null);
+      if (active) setSet(existing && matchesActiveSignature(existing) ? existing : null);
     });
     return () => {
       active = false;

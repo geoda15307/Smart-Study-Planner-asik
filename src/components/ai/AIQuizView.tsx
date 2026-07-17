@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { AIQuizSet, AISummary } from "@/types";
 import { aiRepository } from "@/services/ai/aiRepository";
 import { generateQuiz } from "@/services/ai/quizService";
+import { matchesActiveSignature } from "@/lib/ai/cache";
 import { Button } from "@/components/common/Button";
 import { AIError, AILoading, AIStaleNote, errorMessage } from "./AIStates";
 
@@ -17,7 +18,7 @@ export function AIQuizView({ documentId, summary, filename }: { documentId: stri
   useEffect(() => {
     let active = true;
     aiRepository.getQuizSet(documentId).then((existing) => {
-      if (active) setSet(existing ?? null);
+      if (active) setSet(existing && matchesActiveSignature(existing) ? existing : null);
     });
     return () => {
       active = false;

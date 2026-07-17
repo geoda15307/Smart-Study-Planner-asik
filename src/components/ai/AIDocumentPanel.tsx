@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { AISummary } from "@/types";
 import { aiRepository } from "@/services/ai/aiRepository";
 import { generateSummary } from "@/services/ai/documentSummaryService";
+import { matchesActiveSignature } from "@/lib/ai/cache";
 import { Button } from "@/components/common/Button";
 import { AIError, AILoading, errorMessage } from "./AIStates";
 import { AIFlashcardView } from "./AIFlashcardView";
@@ -29,7 +30,8 @@ export function AIDocumentPanel({ documentId, filename }: { documentId: string; 
   useEffect(() => {
     let active = true;
     aiRepository.getSummary(documentId).then((existing) => {
-      if (active) setSummary(existing ?? null);
+      // Jangan tampilkan ringkasan dari provider/model lama (mis. mock) saat panel dibuka.
+      if (active) setSummary(existing && matchesActiveSignature(existing) ? existing : null);
     });
     return () => {
       active = false;
