@@ -1,19 +1,32 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { detectUploadCategory, validateFile } from "@/lib/upload/config";
 import { deleteFileFromStorage, saveFileToStorage } from "@/services/storage/storageService";
+import { processDocument } from "@/services/document/documentService";
+import { documentRepository } from "@/services/document/documentRepository";
 import { createId } from "@/utils/id";
 import { nowISO } from "@/utils/date";
+import type { UploadedFileMeta } from "@/types";
 
 export function useFileUpload() {
   const uploadedFiles = useAppStore((state) => state.uploadedFiles);
   const addUploadedFile = useAppStore((state) => state.addUploadedFile);
   const updateUploadedFile = useAppStore((state) => state.updateUploadedFile);
   const removeUploadedFileFromStore = useAppStore((state) => state.removeUploadedFile);
+  const setDocument = useAppStore((state) => state.setDocument);
+  const removeDocument = useAppStore((state) => state.removeDocument);
   const [isDragging, setIsDragging] = useState(false);
   const [progressById, setProgressById] = useState<Record<string, number>>({});
+
+  // Mirror Zustand `documents` cuma di memori (sengaja tidak persisted, lihat useAppStore.ts) —
+  // begitu halaman di-reload, isi dulu dari IndexedDB (Single Source of Truth) sekali di awal.
+  useEffect(() => {
+    documentRepository.findAll().then((records) => {
+      records.forEach(setDocument);
+    });
+  }, [setDocument]);
 
   const processFile = useCallback((file: File) => {
     const id = createId("file");
@@ -33,7 +46,7 @@ export function useFileUpload() {
       return;
     }
 
-    addUploadedFile({
+    const meta: UploadedFileMeta = {
       id,
       filename: file.name,
       size: file.size,
@@ -41,7 +54,8 @@ export function useFileUpload() {
       category: detectUploadCategory(file)!,
       status: "uploading",
       createdAt: nowISO()
-    });
+    };
+    addUploadedFile(meta);
 
     const reader = new FileReader();
 
@@ -55,6 +69,15 @@ export function useFileUpload() {
       try {
         await saveFileToStorage(id, file);
         updateUploadedFile(id, { status: "ready" });
+
+        // Pipeline dijalankan otomatis, tidak-blocking — status upload "ready" tidak
+        // menunggu OCR selesai (bisa makan waktu beberapa detik). Lihat revisi desain
+        // di docs/SPRINT_1_ARCHITECTURE_FREEZE.md.
+        void processDocument({ ...meta, status: "ready" })
+          .then(setDocument)
+          .catch((error) => {
+            console.error("Gagal memproses dokumen:", error);
+          });
       } catch {
         updateUploadedFile(id, { status: "error", errorMessage: "Gagal menyimpan file." });
       } finally {
@@ -70,7 +93,7 @@ export function useFileUpload() {
     };
 
     reader.readAsArrayBuffer(file);
-  }, [addUploadedFile, updateUploadedFile]);
+  }, [addUploadedFile, updateUploadedFile, setDocument]);
 
   const processFiles = useCallback((fileList: FileList | File[]) => {
     Array.from(fileList).forEach(processFile);
@@ -99,8 +122,10 @@ export function useFileUpload() {
 
   const removeFile = useCallback(async (id: string) => {
     removeUploadedFileFromStore(id);
+    removeDocument(id);
     await deleteFileFromStorage(id);
-  }, [removeUploadedFileFromStore]);
+    await documentRepository.delete(id);
+  }, [removeUploadedFileFromStore, removeDocument]);
 
   return {
     uploadedFiles,

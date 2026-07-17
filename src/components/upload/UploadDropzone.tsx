@@ -23,7 +23,7 @@ export function UploadDropzone() {
       >
         <Upload className="h-10 w-10 text-primary-600" />
         <p className="mt-3 font-black text-slate-900">Tarik &amp; lepas file di sini, atau klik untuk pilih</p>
-        <p className="mt-1 text-sm text-slate-500">Gambar (PNG, JPG, JPEG), Dokumen (PDF), Spreadsheet (XLSX, XLS, CSV) — maks {MAX_FILE_SIZE_MB}MB per file</p>
+        <p className="mt-1 text-sm text-slate-500">Gambar (PNG, JPG, JPEG), PDF, Dokumen Word (DOC, DOCX), Spreadsheet (XLSX, XLS, CSV), Presentasi (PPT, PPTX) — maks {MAX_FILE_SIZE_MB}MB per file</p>
         <input
           ref={inputRef}
           type="file"
