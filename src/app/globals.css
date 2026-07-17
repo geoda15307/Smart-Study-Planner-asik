@@ -72,3 +72,43 @@ button, input, textarea, select { font: inherit; }
 .focus-ring {
   @apply focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500;
 }
+
+/* Micro-interactions — dipakai chat AI Assistant, toast, dan panel dokumen. */
+@keyframes ssp-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: ssp-fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes ssp-slide-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in { animation: ssp-slide-in 0.25s ease-out both; }
+
+@keyframes ssp-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+.typing-dot { animation: ssp-dot 1.1s infinite ease-in-out; }
+
+@keyframes ssp-shimmer {
+  100% { transform: translateX(100%); }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--color-slate-100));
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--color-surface) / 0.6), transparent);
+  animation: ssp-shimmer 1.4s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-slide-in, .typing-dot, .skeleton::after { animation: none; }
+}

@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useTheme } from "@/hooks/useTheme";
 import { createClient } from "@/lib/supabase/client";
+import { Toaster } from "@/components/common/Toaster";
 
 const appRoutes = [
   ["Dashboard", "/dashboard", "🏠"],
@@ -195,6 +196,8 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
           </aside>
         </div>
       ) : null}
+
+      <Toaster />
     </div>
   );
 }

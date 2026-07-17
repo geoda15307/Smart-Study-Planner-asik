@@ -17,6 +17,19 @@ export async function listStoredFileIds() {
   return getAllBlobIds();
 }
 
+// Ambil blob dari IndexedDB lalu trigger download di browser. Return false kalau blob hilang.
+export async function downloadStoredFile(id: string, filename: string): Promise<boolean> {
+  const blob = await getBlob(id);
+  if (!blob) return false;
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+  return true;
+}
+
 export function downloadJSON(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);

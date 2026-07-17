@@ -5,7 +5,7 @@ import { UploadDropzone } from "@/components/upload/UploadDropzone";
 
 export default function UploadPage() {
   return (
-    <AppShell title="Upload Dokumen" subtitle="Upload gambar, dokumen, atau spreadsheet untuk diproses nanti.">
+    <AppShell title="Dokumen" subtitle="Upload materi kuliah — teksnya diekstrak otomatis, lalu ringkas & pelajari dengan AI.">
       <UploadDropzone />
     </AppShell>
   );

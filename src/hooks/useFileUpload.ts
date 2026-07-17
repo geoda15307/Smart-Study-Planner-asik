@@ -6,6 +6,7 @@ import { detectUploadCategory, validateFile } from "@/lib/upload/config";
 import { deleteFileFromStorage, saveFileToStorage } from "@/services/storage/storageService";
 import { processDocument } from "@/services/document/documentService";
 import { documentRepository } from "@/services/document/documentRepository";
+import { toast } from "@/store/useToast";
 import { createId } from "@/utils/id";
 import { nowISO } from "@/utils/date";
 import type { UploadedFileMeta } from "@/types";
@@ -43,6 +44,7 @@ export function useFileUpload() {
         errorMessage: validation.reason,
         createdAt: nowISO()
       });
+      toast.error(`"${file.name}" ditolak: ${validation.reason}`);
       return;
     }
 
@@ -69,17 +71,19 @@ export function useFileUpload() {
       try {
         await saveFileToStorage(id, file);
         updateUploadedFile(id, { status: "ready" });
+        toast.success(`"${file.name}" berhasil diupload`);
 
         // Pipeline dijalankan otomatis, tidak-blocking — status upload "ready" tidak
         // menunggu OCR selesai (bisa makan waktu beberapa detik). Lihat revisi desain
         // di docs/SPRINT_1_ARCHITECTURE_FREEZE.md.
         void processDocument({ ...meta, status: "ready" })
           .then(setDocument)
-          .catch((error) => {
-            console.error("Gagal memproses dokumen:", error);
+          .catch(() => {
+            toast.error(`Gagal memproses "${file.name}". Coba upload ulang.`);
           });
       } catch {
         updateUploadedFile(id, { status: "error", errorMessage: "Gagal menyimpan file." });
+        toast.error(`Gagal menyimpan "${file.name}".`);
       } finally {
         setProgressById((current) => {
           const { [id]: _removed, ...rest } = current;
@@ -90,6 +94,7 @@ export function useFileUpload() {
 
     reader.onerror = () => {
       updateUploadedFile(id, { status: "error", errorMessage: "Gagal membaca file." });
+      toast.error(`Gagal membaca "${file.name}".`);
     };
 
     reader.readAsArrayBuffer(file);
@@ -125,7 +130,15 @@ export function useFileUpload() {
     removeDocument(id);
     await deleteFileFromStorage(id);
     await documentRepository.delete(id);
+    toast.info("File dihapus");
   }, [removeUploadedFileFromStore, removeDocument]);
+
+  const renameFile = useCallback((id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    updateUploadedFile(id, { filename: trimmed });
+    toast.success("Nama file diperbarui");
+  }, [updateUploadedFile]);
 
   return {
     uploadedFiles,
@@ -135,6 +148,7 @@ export function useFileUpload() {
     handleDragOver,
     handleDragLeave,
     handleFileInputChange,
-    removeFile
+    removeFile,
+    renameFile
   };
 }

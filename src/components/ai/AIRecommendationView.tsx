@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { AICalendarSuggestion, AIRecommendation, AISummary, AITaskSuggestion, Category, StudySession, Task } from "@/types";
 import { aiRepository } from "@/services/ai/aiRepository";
 import { generateRecommendation } from "@/services/ai/recommendationService";
+import { matchesActiveSignature } from "@/lib/ai/cache";
+import { toast } from "@/store/useToast";
 import { useAppStore } from "@/store/useAppStore";
 import { Button } from "@/components/common/Button";
 import { PriorityBadge } from "@/components/common/Badge";
@@ -70,7 +72,7 @@ export function AIRecommendationView({ documentId, summary, filename }: { docume
   useEffect(() => {
     let active = true;
     aiRepository.getRecommendation(documentId).then((existing) => {
-      if (active) setRec(existing ?? null);
+      if (active) setRec(existing && matchesActiveSignature(existing) ? existing : null);
     });
     return () => {
       active = false;
@@ -102,6 +104,7 @@ export function AIRecommendationView({ documentId, summary, filename }: { docume
     };
     setRec(updated);
     await aiRepository.saveRecommendation(updated);
+    toast.success("Saran ditambahkan ke Tugas");
   }
 
   async function applyCalendar(suggestion: AICalendarSuggestion) {
@@ -114,6 +117,7 @@ export function AIRecommendationView({ documentId, summary, filename }: { docume
     };
     setRec(updated);
     await aiRepository.saveRecommendation(updated);
+    toast.success("Saran ditambahkan ke Kalender");
   }
 
   if (loading) return <AILoading label="Membuat rekomendasi..." />;
