@@ -169,3 +169,17 @@ Catatan saat mencoba ulang di browser:
 
 - Jika sebelumnya project lama pernah dibuka, hapus localStorage browser agar flow login baru terlihat bersih.
 - Bisa juga buka DevTools → Application → Local Storage → hapus key `smart-study-planner-store` dan `smart-study-planner-token`.
+
+## Deployment (Peluncuran)
+
+Proyek **Smart Study Planner** ini telah di-deploy dan dapat diakses secara langsung (Live Preview) melalui tautan berikut:
+**[https://latihan-deploy-smart-study.vercel.app]**
+
+Aplikasi web ini diluncurkan menggunakan platform **Vercel** dengan dukungan penuh untuk arsitektur **Next.js**.
+
+### Catatan Penting Konfigurasi Vercel
+Jika anggota tim lain ingin menghubungkan *repository* ini ke akun Vercel masing-masing, pastikan untuk memperhatikan konfigurasi berikut agar tidak terjadi *error 404* (halaman tidak ditemukan):
+
+1. **Framework Preset**: Pada menu pengaturan proyek (Settings > Build and Deployment), pastikan Framework Preset diatur ke **Next.js**.
+2. **Root Directory**: Pastikan *Root Directory* diarahkan ke folder yang tepat tempat kodingan Next.js berada (misalnya: `Smart-Study-Planner-Latihan-Deploy` atau nama folder utama yang kalian sepakati). Jangan dibiarkan kosong jika *file package.json* kalian tidak berada di luar/pangkal *repository*.
+3. **Environment Variables**: Jika proyek ini kedepannya menggunakan *database* (seperti Supabase) atau *API Key*, pastikan semua *key* tersebut dimasukkan ke dalam menu **Environment Variables** di Vercel agar fitur bisa berjalan di mode *Production*.
