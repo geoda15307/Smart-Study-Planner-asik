@@ -11,7 +11,6 @@ import { formatDateID, sortTasks } from "@/utils/date";
 export default function DashboardPage() {
   const user = useAppStore((state) => state.user);
   const tasks = useAppStore((state) => state.tasks);
-  const schedules = useAppStore((state) => state.schedules);
   const completeTask = useAppStore((state) => state.completeTask);
   const activeTasks = sortTasks(tasks).filter((task) => task.status !== "Selesai");
   const topTask = activeTasks[0];
@@ -63,15 +62,15 @@ export default function DashboardPage() {
             </Card>
 
             <Card>
-              <h3 className="font-black text-slate-900">Jadwal Kuliah</h3>
-              <div className="mt-4 space-y-3">
-                {schedules.map((schedule) => (
-                  <div key={schedule.id} className="rounded-2xl bg-slate-50 p-3">
-                    <p className="text-sm font-black text-slate-900">{schedule.courseName}</p>
-                    <p className="text-xs text-slate-500">{schedule.day}, {schedule.startTime}-{schedule.endTime} • {schedule.room}</p>
-                  </div>
-                ))}
-              </div>
+              <h3 className="font-black text-slate-900">Tentang Smart Study Planner</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Smart Study Planner membantu kamu mengatur tugas kuliah, deadline, dan jadwal belajar dalam satu tempat — lengkap dengan bantuan AI untuk merangkum materi, membuat kuis, dan memberi rekomendasi prioritas.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                <li className="flex items-start gap-2"><span>📌</span><span>Kelola tugas dengan prioritas otomatis</span></li>
+                <li className="flex items-start gap-2"><span>🤖</span><span>AI Assistant untuk ringkasan &amp; kuis</span></li>
+                <li className="flex items-start gap-2"><span>📅</span><span>Kalender & jadwal kuliah terintegrasi</span></li>
+              </ul>
             </Card>
           </div>
         </div>
