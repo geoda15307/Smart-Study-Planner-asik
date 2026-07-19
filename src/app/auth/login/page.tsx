@@ -8,6 +8,7 @@ import { Card } from "@/components/common/Card";
 import { Field, Input } from "@/components/common/Form";
 import { login } from "@/services/auth/authService";
 import { useAppStore } from "@/store/useAppStore";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,6 +44,24 @@ export default function LoginPage() {
     }
   }
 
+  async function loginWithGoogle() {
+    setLoading(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (oauthError) throw oauthError;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal login dengan Google.");
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-soft px-4 py-8">
       <Card className="w-full max-w-md">
@@ -57,7 +76,7 @@ export default function LoginPage() {
           <Field label="Password"><Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="password123" /></Field>
           <Button className="w-full" disabled={loading} onClick={() => submit()}>{loading ? "Memvalidasi akun..." : "Login"}</Button>
           <Button className="w-full" variant="secondary" disabled={loading} onClick={() => submit("demo@smartstudy.app", "password123")}>Masuk sebagai Demo</Button>
-          <Button className="w-full" variant="secondary" disabled={loading}>Login dengan Google</Button>
+          <Button className="w-full" variant="secondary" disabled={loading} onClick={loginWithGoogle}>Login dengan Google</Button>
         </div>
         <p className="mt-6 text-center text-sm text-slate-500">Belum punya akun? <Link href="/auth/register" className="font-bold text-primary-600">Daftar sekarang</Link></p>
       </Card>
