@@ -1,18 +1,17 @@
-import { InvalidPDFException, PasswordException, PDFParse } from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 import type { DocumentProcessor } from "../types";
 
 export const pdfProcessor: DocumentProcessor = {
   category: "pdf",
   name: "pdf",
   async process(blob) {
-    const arrayBuffer = await blob.arrayBuffer();
-    const parser = new PDFParse({ data: arrayBuffer });
-
     try {
-      const result = await parser.getText();
-      const text = result.text.trim();
+      const arrayBuffer = await blob.arrayBuffer();
+      const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
+      const { text, totalPages } = await extractText(pdf, { mergePages: true });
+      const trimmedText = text.trim();
 
-      if (!text) {
+      if (!trimmedText) {
         return {
           status: "failed",
           errorCode: "EMPTY_RESULT",
@@ -22,31 +21,15 @@ export const pdfProcessor: DocumentProcessor = {
 
       return {
         status: "extracted",
-        rawText: text,
-        pageCount: result.total
+        rawText: trimmedText,
+        pageCount: totalPages
       };
     } catch (error) {
-      if (error instanceof PasswordException) {
-        return {
-          status: "failed",
-          errorCode: "PASSWORD_PROTECTED",
-          errorMessage: "PDF dilindungi password, tidak bisa diproses otomatis."
-        };
-      }
-      if (error instanceof InvalidPDFException) {
-        return {
-          status: "failed",
-          errorCode: "CORRUPT_FILE",
-          errorMessage: "File PDF tidak valid atau rusak."
-        };
-      }
       return {
         status: "failed",
         errorCode: "PARSE_ERROR",
         errorMessage: error instanceof Error ? error.message : "Gagal membaca PDF."
       };
-    } finally {
-      await parser.destroy();
     }
   }
 };
